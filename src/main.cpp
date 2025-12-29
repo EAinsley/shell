@@ -1,9 +1,9 @@
+#include "utils.h"
 #include <array>
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <string_view>
-#include <utility>
 
 using function_handle_t = int (*)(std::string_view args);
 // eval and build
@@ -33,16 +33,12 @@ bool notfound(std::string_view command) {
 }
 
 int eval(std::string_view commands) {
-  size_t delimiter = commands.find(' ');
-  std::string_view command = commands.substr(0, delimiter);
-  std::string_view args = (delimiter != std::string_view::npos)
-                              ? commands.substr(delimiter + 1)
-                              : std::string_view{};
-  function_handle_t func_handler = get_builtin(command);
+  auto args = shell::tokenize_fist_sv(commands);
+  function_handle_t func_handler = get_builtin(args.first);
   if (func_handler != NULL) {
-    return func_handler(args);
+    return func_handler(args.second);
   }
-  return notfound(command);
+  return notfound(args.first);
 }
 
 // Built-in Functions
@@ -52,12 +48,11 @@ int echo_handler(std::string_view args) {
 }
 
 int type_handler(std::string_view args) {
-  size_t first_token_pos = args.find(" ");
-  std::string_view first_arg = args.substr(0, first_token_pos);
-  if (get_builtin(first_arg)) {
-    std::cout << first_arg << " is a shell builtin";
+  std::string_view name = shell::tokenize_fist_sv(args).first;
+  if (get_builtin(name)) {
+    std::cout << name << " is a shell builtin";
   } else {
-    std::cout << first_arg << ": not found";
+    std::cout << name << ": not found";
   }
   return 0;
 }
