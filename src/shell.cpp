@@ -16,7 +16,10 @@ Shell::Shell() : ctx_(std::getenv("PATH")) {}
 
 int Shell::eval(std::string_view commands) {
   auto name_pair = tokenize_fist_sv(commands);
-  auto args = tokenize_sv(name_pair.second);
+  ArgListSV args;
+  if (name_pair.second.has_value()) {
+    args = tokenize_sv(name_pair.second.value());
+  }
   function_handle_t func_handler = get_builtin(name_pair.first);
   // TODO: Shall we unified this part?
   if (func_handler != nullptr) {

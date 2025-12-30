@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <optional>
 #include <string_view>
 #include <unistd.h>
 #include <vector>
@@ -29,16 +30,22 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter) {
   return res;
 }
 
-std::pair<std::string_view, std::string_view>
+std::pair<std::string_view, std::optional<std::string_view>>
 tokenize_fist_sv(const std::string_view str_sv, char delimiter) {
   size_t delimiter_pos = str_sv.find(delimiter);
-  return {str_sv.substr(0, delimiter_pos), str_sv.substr(delimiter_pos + 1)};
+  return {str_sv.substr(0, delimiter_pos),
+          delimiter_pos == std::string_view::npos
+              ? std::nullopt
+              : std::optional(str_sv.substr(delimiter_pos + 1))};
 }
 
-std::pair<std::string, std::string> tokenize_fist(const std::string &str,
-                                                  char delimiter) {
+std::pair<std::string, std::optional<std::string>>
+tokenize_fist(const std::string &str, char delimiter) {
   size_t delimiter_pos = str.find(delimiter);
-  return {str.substr(0, delimiter_pos), str.substr(delimiter_pos + 1)};
+  return {str.substr(0, delimiter_pos),
+          delimiter_pos == std::string::npos
+              ? std::nullopt
+              : std::optional(str.substr(delimiter_pos + 1))};
 }
 
 std::optional<std::string> search_path(const std::string_view name,
