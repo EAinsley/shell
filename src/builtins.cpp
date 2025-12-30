@@ -14,6 +14,9 @@ namespace shell {
 
 namespace {
 
+// TODO: I really need to change this registry part... Not sure if this can be
+// acheived by some meta programming techniques. Or we could just register them
+// at runtime and lazily...
 int echo_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
                  const ShellContext & /* unused */);
 int type_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
@@ -21,13 +24,16 @@ int type_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
 int exit_handler(const std::string_view /* unused */,
                  const ArgListSV & /* unused */,
                  const ShellContext & /* unused */);
+int pwd_handler(const std::string_view /* unused */,
+                const ArgListSV & /* unused */,
+                const ShellContext & /* unused */);
 
 constexpr auto handler_map =
-    std::array<std::pair<std::string_view, function_handle_t>, 3>{{
-        {"echo", echo_handler},
-        {"type", type_handler},
-        {"exit", exit_handler},
-    }};
+    std::array<std::pair<std::string_view, function_handle_t>, 4>{
+        {{"echo", echo_handler},
+         {"type", type_handler},
+         {"exit", exit_handler},
+         {"pwd", pwd_handler}}};
 
 // Built-in Functions
 int echo_handler(const std::string_view name_sv, const ArgListSV &args_sv,
@@ -57,6 +63,13 @@ int exit_handler(const std::string_view /* unused */,
                  const ArgListSV & /* unused */,
                  const ShellContext & /* unused */) {
   return 9;
+}
+
+int pwd_handler(const std::string_view /* unused */,
+                const ArgListSV & /* unused */,
+                const ShellContext & /* unused */) {
+  std::cout << std::filesystem::current_path().string() << std::endl;
+  return 0;
 }
 } // namespace
 
