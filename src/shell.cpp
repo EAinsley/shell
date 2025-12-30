@@ -18,8 +18,13 @@ int Shell::eval(std::string_view commands) {
   auto name_pair = tokenize_fist_sv(commands);
   auto args = tokenize_sv(name_pair.second);
   function_handle_t func_handler = get_builtin(name_pair.first);
+  // TODO: Shall we unified this part?
   if (func_handler != nullptr) {
     return func_handler(name_pair.first, args, ctx_);
+  }
+  std::optional<std::string> path = search_path(name_pair.first, ctx_.path_);
+  if (path.has_value()) {
+    return call_external_function(name_pair.first, args, path.value());
   }
   return notfound(name_pair.first);
 }
