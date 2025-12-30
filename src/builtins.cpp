@@ -2,19 +2,23 @@
 
 #include "shell_context.h"
 #include "utils.h"
-#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string_view>
 #include <unistd.h>
+#include <vector>
 
 namespace shell {
 
 namespace {
 
-int echo_handler(std::string_view args, const ShellContext &_);
-int type_handler(std::string_view args, const ShellContext &ctx);
-int exit_handler(std::string_view _sv, const ShellContext &_sc);
+int echo_handler(const std::string_view /* unused */, const ArgListSV &args,
+                 const ShellContext & /* unused */);
+int type_handler(const std::string_view /* unused */, const ArgListSV &args,
+                 const ShellContext &ctx);
+int exit_handler(const std::string_view /* unused */,
+                 const ArgListSV & /* unused */,
+                 const ShellContext & /* unused */);
 
 constexpr auto handler_map =
     std::array<std::pair<std::string_view, function_handle_t>, 3>{{
@@ -24,45 +28,35 @@ constexpr auto handler_map =
     }};
 
 // Built-in Functions
-int echo_handler(std::string_view args, const ShellContext &_) {
-  std::cout << args;
+int echo_handler(const std::string_view name,
+                 const std::vector<std::string_view> &args,
+                 const ShellContext & /* unused */) {
+  std::cout << args << std::endl;
   return 0;
 }
 
-inline std::optional<std::string> search_path(std::string_view name,
-                                              const ShellContext::Path &dirs) {
-  namespace fs = std::filesystem;
-  for (const auto &dir : dirs) {
-    auto full_path = std::filesystem::path(dir) / name;
-#ifdef _WIN32
-    full_path += ".exe";
-#endif
-    // Watchout POSIX 0 means success
-    if (fs::exists(full_path) &&
-        (fs::is_regular_file(full_path) || fs::is_symlink(full_path)) &&
-        access(full_path.c_str(), X_OK) == 0) {
-      return full_path.string();
-    }
-  }
-  return std::nullopt;
-}
-
-int type_handler(std::string_view args, const ShellContext &ctx) {
-  std::string_view name = shell::tokenize_fist_sv(args).first;
-  if (get_builtin(name)) {
-    std::cout << name << " is a shell builtin";
-  } else {
-    auto path_to_name = search_path(name, ctx.path_);
-    if (path_to_name.has_value()) {
-      std::cout << name << " is " << path_to_name.value();
+int type_handler(const std::string_view /* unused */, const ArgListSV &args,
+                 const ShellContext &ctx) {
+  for (const std::string_view arg : args) {
+    if (get_builtin(arg)) {
+      std::cout << arg << " is a shell builtin\n";
     } else {
-      std::cout << name << ": not found";
+      auto path_to_name = search_path(arg, ctx.path_);
+      if (path_to_name.has_value()) {
+        std::cout << arg << " is " << path_to_name.value() << std::endl;
+      } else {
+        std::cout << arg << ": not found" << std::endl;
+      }
     }
   }
   return 0;
 }
 
-int exit_handler(std::string_view _sv, const ShellContext &_sc) { return 9; }
+int exit_handler(const std::string_view /* unused */,
+                 const ArgListSV & /* unused */,
+                 const ShellContext & /* unused */) {
+  return 9;
+}
 } // namespace
 
 function_handle_t get_builtin(std::string_view name) {

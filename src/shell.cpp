@@ -8,19 +8,20 @@
 namespace shell {
 
 inline bool notfound(std::string_view command) {
-  std::cout << command << ": command not found";
+  std::cout << command << ": command not found\n";
   return true;
 }
 
 Shell::Shell() : ctx_(std::getenv("PATH")) {}
 
 int Shell::eval(std::string_view commands) {
-  auto args = tokenize_fist_sv(commands);
-  function_handle_t func_handler = get_builtin(args.first);
+  auto name_pair = tokenize_fist_sv(commands);
+  auto args = tokenize_sv(name_pair.second);
+  function_handle_t func_handler = get_builtin(name_pair.first);
   if (func_handler != nullptr) {
-    return func_handler(args.second, ctx_);
+    return func_handler(name_pair.first, args, ctx_);
   }
-  return notfound(args.first);
+  return notfound(name_pair.first);
 }
 
 int Shell::run() {
@@ -36,7 +37,6 @@ int Shell::run() {
       if (status_ == 9)
         return 0;
     }
-    std::cout << std::endl;
   }
   return 0;
 }
