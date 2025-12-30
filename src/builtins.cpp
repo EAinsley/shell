@@ -27,13 +27,16 @@ int exit_handler(const std::string_view /* unused */,
 int pwd_handler(const std::string_view /* unused */,
                 const ArgListSV & /* unused */,
                 const ShellContext & /* unused */);
+int cd_handler(const std::string_view /* unused */, const ArgListSV &ArgListSV,
+               const ShellContext & /* unused */);
 
 constexpr auto handler_map =
-    std::array<std::pair<std::string_view, function_handle_t>, 4>{
+    std::array<std::pair<std::string_view, function_handle_t>, 5>{
         {{"echo", echo_handler},
          {"type", type_handler},
          {"exit", exit_handler},
-         {"pwd", pwd_handler}}};
+         {"pwd", pwd_handler},
+         {"cd", cd_handler}}};
 
 // Built-in Functions
 int echo_handler(const std::string_view name_sv, const ArgListSV &args_sv,
@@ -69,6 +72,24 @@ int pwd_handler(const std::string_view /* unused */,
                 const ArgListSV & /* unused */,
                 const ShellContext & /* unused */) {
   std::cout << std::filesystem::current_path().string() << std::endl;
+  return 0;
+}
+
+int cd_handler(const std::string_view /* unused */, const ArgListSV &ArgListSV,
+               const ShellContext & /* unused */) {
+  if (ArgListSV.size() > 1) {
+    std::cerr << "Too many args for cd command\n";
+  }
+  if (ArgListSV.empty()) {
+    /* Do nothing for Now */
+    return 0;
+  }
+  try {
+    std::filesystem::current_path(ArgListSV[0]);
+  } catch (std::filesystem::filesystem_error const &ex) {
+    std::cerr << "cd: " << ArgListSV[0] << ": " << ex.code().message() << '\n';
+    return ex.code().value();
+  }
   return 0;
 }
 } // namespace
