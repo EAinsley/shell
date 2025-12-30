@@ -2,6 +2,7 @@
 
 #include "shell_context.h"
 #include "utils.h"
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -80,12 +81,11 @@ int cd_handler(const std::string_view /* unused */, const ArgListSV &ArgListSV,
   if (ArgListSV.size() > 1) {
     std::cerr << "Too many args for cd command\n";
   }
-  if (ArgListSV.empty()) {
-    /* Do nothing for Now */
-    return 0;
-  }
+  std::filesystem::path to_path = (ArgListSV.empty() || ArgListSV[0] == "~")
+                                      ? getenv("HOME")
+                                      : ArgListSV[0];
   try {
-    std::filesystem::current_path(ArgListSV[0]);
+    std::filesystem::current_path(to_path);
   } catch (std::filesystem::filesystem_error const &ex) {
     std::cerr << "cd: " << ArgListSV[0] << ": " << ex.code().message() << '\n';
     return ex.code().value();
