@@ -87,13 +87,13 @@ ArgList parse_args(const std::string &str) {
     return true;
   };
 
-  auto handle_backslash = [&is_escaping, &arg](char c) {
+  auto handle_backslash = [&is_escaping, &arg, &state](char c) {
     if (is_escaping) {
       arg.push_back(c);
       is_escaping = false;
       return true;
     }
-    if (c == '\\') {
+    if (c == '\\' && state != ArgState::SingleQuote) {
       is_escaping = true;
       return true;
     }
