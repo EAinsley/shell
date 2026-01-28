@@ -4,6 +4,7 @@
 #include "utils.h"
 #include <cstdlib>
 #include <iostream>
+#include <utility>
 
 namespace shell {
 
@@ -14,11 +15,11 @@ inline bool notfound(std::string_view command) {
 
 Shell::Shell() : ctx_(std::getenv("PATH")) {}
 
-int Shell::eval(std::string_view commands) {
-  auto name_pair = tokenize_fist_sv(commands);
-  ArgListSV args;
+int Shell::eval(const std::string &commands) {
+  auto name_pair = tokenize_fist(commands);
+  ArgList args;
   if (name_pair.second.has_value()) {
-    args = tokenize_sv(name_pair.second.value());
+    args = parse_args(name_pair.second.value());
   }
   function_handle_t func_handler = get_builtin(name_pair.first);
   // TODO: Shall we unified this part?
@@ -47,6 +48,32 @@ int Shell::run() {
     }
   }
   return 0;
+}
+
+ArgList parse_args(const std::string &str) {
+  bool is_quoting = false;
+  std::string arg;
+  std::vector<std::string> args;
+  arg.reserve(16);
+  for (char c : str) {
+    if (c == '\'') {
+      is_quoting = !is_quoting;
+    } else if (c == ' ') {
+      if (is_quoting) {
+        arg.push_back(' ');
+      } else if (!arg.empty()) {
+        args.push_back(arg);
+        arg.clear();
+      }
+      // Otherwise, it's consecutive space...ignoring
+    } else {
+      arg.push_back(c);
+    }
+  }
+  if (!arg.empty()) {
+    args.push_back(arg);
+  }
+  return args;
 }
 
 } // namespace shell

@@ -1,5 +1,6 @@
 #pragma once
 #include "shell_context.h"
+#include "utils.h"
 #include <array>
 #include <string_view>
 #include <vector>
@@ -9,12 +10,13 @@ class Shell {
 private:
   const ShellContext ctx_;
   unsigned int status_ = 0;
-  int eval(std::string_view commands);
+  int eval(const std::string& commands);
 
 public:
   Shell();
   int run();
 };
 
+ArgList parse_args(const std::string& str);
 } // namespace shell
 // SHELL_H

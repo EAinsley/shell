@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace shell {
-using ArgListSV = std::vector<std::string_view>;
 using ArgList = std::vector<std::string>;
 
 std::vector<std::string_view> tokenize_sv(const std::string_view str_sv,
@@ -23,6 +22,6 @@ tokenize_fist(const std::string &str, char delimiter = ' ');
 std::optional<std::string> search_path(const std::string_view name,
                                        const ShellContext::Path &dirs);
 
-std::ostream &operator<<(std::ostream &os, const ArgListSV &args);
+std::ostream &operator<<(std::ostream &os, const ArgList &args);
 } // namespace shell
 // UTILS_H

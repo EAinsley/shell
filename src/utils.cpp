@@ -65,7 +65,8 @@ std::optional<std::string> search_path(const std::string_view name,
   }
   return std::nullopt;
 }
-std::ostream &operator<<(std::ostream &os, const ArgListSV &args) {
+
+std::ostream &operator<<(std::ostream &os, const ArgList &args) {
   if (args.empty()) {
     return os;
   }

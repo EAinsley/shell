@@ -18,17 +18,17 @@ namespace {
 // TODO: I really need to change this registry part... Not sure if this can be
 // acheived by some meta programming techniques. Or we could just register them
 // at runtime and lazily...
-int echo_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
+int echo_handler(const std::string_view /* unused */, const ArgList &args,
                  const ShellContext & /* unused */);
-int type_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
+int type_handler(const std::string_view /* unused */, const ArgList &args,
                  const ShellContext &ctx);
 int exit_handler(const std::string_view /* unused */,
-                 const ArgListSV & /* unused */,
+                 const ArgList & /* unused */,
                  const ShellContext & /* unused */);
 int pwd_handler(const std::string_view /* unused */,
-                const ArgListSV & /* unused */,
+                const ArgList & /* unused */,
                 const ShellContext & /* unused */);
-int cd_handler(const std::string_view /* unused */, const ArgListSV &ArgListSV,
+int cd_handler(const std::string_view /* unused */, const ArgList &args,
                const ShellContext & /* unused */);
 
 constexpr auto handler_map =
@@ -40,23 +40,23 @@ constexpr auto handler_map =
          {"cd", cd_handler}}};
 
 // Built-in Functions
-int echo_handler(const std::string_view name_sv, const ArgListSV &args_sv,
+int echo_handler(const std::string_view name_sv, const ArgList &args,
                  const ShellContext & /* unused */) {
-  std::cout << args_sv << std::endl;
+  std::cout << args << std::endl;
   return 0;
 }
 
-int type_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
+int type_handler(const std::string_view /* unused */, const ArgList &args,
                  const ShellContext &ctx) {
-  for (const std::string_view arg_sv : args_sv) {
-    if (get_builtin(arg_sv)) {
-      std::cout << arg_sv << " is a shell builtin\n";
+  for (const std::string& arg : args) {
+    if (get_builtin(arg)) {
+      std::cout << arg << " is a shell builtin\n";
     } else {
-      auto path_to_name = search_path(arg_sv, ctx.path_);
+      auto path_to_name = search_path(arg, ctx.path_);
       if (path_to_name.has_value()) {
-        std::cout << arg_sv << " is " << path_to_name.value() << std::endl;
+        std::cout << arg << " is " << path_to_name.value() << std::endl;
       } else {
-        std::cout << arg_sv << ": not found" << std::endl;
+        std::cout << arg << ": not found" << std::endl;
       }
     }
   }
@@ -64,30 +64,30 @@ int type_handler(const std::string_view /* unused */, const ArgListSV &args_sv,
 }
 
 int exit_handler(const std::string_view /* unused */,
-                 const ArgListSV & /* unused */,
+                 const ArgList & /* unused */,
                  const ShellContext & /* unused */) {
   return 9;
 }
 
 int pwd_handler(const std::string_view /* unused */,
-                const ArgListSV & /* unused */,
+                const ArgList & /* unused */,
                 const ShellContext & /* unused */) {
   std::cout << std::filesystem::current_path().string() << std::endl;
   return 0;
 }
 
-int cd_handler(const std::string_view /* unused */, const ArgListSV &ArgListSV,
+int cd_handler(const std::string_view /* unused */, const ArgList &args,
                const ShellContext & /* unused */) {
-  if (ArgListSV.size() > 1) {
+  if (args.size() > 1) {
     std::cerr << "Too many args for cd command\n";
   }
-  std::filesystem::path to_path = (ArgListSV.empty() || ArgListSV[0] == "~")
+  std::filesystem::path to_path = (args.empty() || args[0] == "~")
                                       ? getenv("HOME")
-                                      : ArgListSV[0];
+                                      : args[0];
   try {
     std::filesystem::current_path(to_path);
   } catch (std::filesystem::filesystem_error const &ex) {
-    std::cerr << "cd: " << ArgListSV[0] << ": " << ex.code().message() << '\n';
+    std::cerr << "cd: " << args[0] << ": " << ex.code().message() << '\n';
     return ex.code().value();
   }
   return 0;
@@ -103,7 +103,7 @@ function_handle_t get_builtin(std::string_view name) {
 }
 
 int call_external_function(const std::string_view name_sv,
-                           const ArgListSV &args_sv, const std::string &path) {
+                           const ArgList &args, const std::string &path) {
   pid_t pid = fork();
   if (pid < 0) {
     std::cerr << "Fork Error.\n";
@@ -111,7 +111,6 @@ int call_external_function(const std::string_view name_sv,
   }
   if (pid == 0) {
     // Copy on demand, only for the child.
-    std::vector<std::string> args(args_sv.begin(), args_sv.end());
     std::string name(name_sv);
     // ISSUE: Wait...why they cannot be <const char *> ...
     std::vector<char *> argv;
