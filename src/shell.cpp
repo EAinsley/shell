@@ -51,39 +51,47 @@ int Shell::run() {
 }
 
 ArgList parse_args(const std::string &str) {
-  enum State { N /*Normal*/, S /*Single*/, D /*Double*/ } state = State::N;
+  enum class ArgState : char { Normal, SingleQuote = '\'', DoubleQuote = '"' };
+  ArgState state = ArgState::Normal;
   std::string arg;
   std::vector<std::string> args;
   arg.reserve(16);
-  for (char c : str) {
-    if (c == '\'') {
-      if (state == State::S) {
-        state = State::N;
-      } else if (state == State::N) {
-        state = State::S;
-      } else {
-        arg.push_back('\'');
-      }
-    } else if (c == '"') {
-      if (state == State::D) {
-        state = State::N;
-      } else if (state == State::N) {
-        state = State::D;
-      } else {
-        arg.push_back('"');
-      }
-    } else if (c == ' ') {
-      if (state != State::N) {
-        arg.push_back(' ');
-      } else if (!arg.empty()) {
-        args.push_back(arg);
-        arg.clear();
-      }
-      // Otherwise, it's consecutive space outside of quotes...ignoring
-    } else {
-      arg.push_back(c);
+
+  auto handle_quote = [&state, &arg](char q, ArgState s) {
+    if (q != static_cast<char>(s)) {
+      return false;
     }
+    if (state == s) {
+      state = ArgState::Normal;
+    } else if (state == ArgState::Normal) {
+      state = s;
+    } else {
+      arg.push_back(q);
+    }
+    return true;
+  };
+
+  auto handle_space = [&state, &arg, &args](char c) {
+    if (state != ArgState::Normal || c != ' ') {
+      return false;
+    }
+    if (!arg.empty()) {
+      args.push_back(arg);
+      arg.clear();
+    }
+    return true;
+  };
+
+  for (char c : str) {
+    if (handle_quote(c, ArgState::SingleQuote))
+      continue;
+    if (handle_quote(c, ArgState::DoubleQuote))
+      continue;
+    if (handle_space(c))
+      continue;
+    arg.push_back(c);
   }
+
   if (!arg.empty()) {
     args.push_back(arg);
   }
