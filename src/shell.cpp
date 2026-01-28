@@ -2,6 +2,7 @@
 
 #include "builtins.h"
 #include "utils.h"
+#include <array>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -92,7 +93,20 @@ ArgList parse_args(const std::string &str) {
   };
 
   auto handle_backslash = [&is_escaping, &arg, &state](char c) {
+    const std::array<char, 4> double_escape = {'"', '\\', '$', '`'};
+    bool can_escape = true;
+    if (is_escaping && state == ArgState::DoubleQuote) {
+      can_escape = false;
+      for (auto e : double_escape) {
+        if (e == c) {
+          can_escape = true;
+        }
+      }
+    }
     if (is_escaping) {
+      if (!can_escape) {
+        arg.push_back('\\');
+      }
       arg.push_back(c);
       is_escaping = false;
       return true;
