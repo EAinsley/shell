@@ -2,6 +2,7 @@
 
 #include "builtins.h"
 #include "utils.h"
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <utility>
@@ -16,21 +17,24 @@ inline bool notfound(std::string_view command) {
 Shell::Shell() : ctx_(std::getenv("PATH")) {}
 
 int Shell::eval(const std::string &commands) {
-  auto name_pair = tokenize_fist(commands);
+  // It should not be empty string.
+  assert(!commands.empty());
+
   ArgList args;
-  if (name_pair.second.has_value()) {
-    args = parse_args(name_pair.second.value());
-  }
-  function_handle_t func_handler = get_builtin(name_pair.first);
+  args = parse_args(commands);
+  std::string cmd = std::move(args.front());
+  args.erase(args.begin());
+
+  function_handle_t func_handler = get_builtin(cmd);
   // TODO: Shall we unified this part?
   if (func_handler != nullptr) {
-    return func_handler(name_pair.first, args, ctx_);
+    return func_handler(cmd, args, ctx_);
   }
-  std::optional<std::string> path = search_path(name_pair.first, ctx_.path_);
+  std::optional<std::string> path = search_path(cmd, ctx_.path_);
   if (path.has_value()) {
-    return call_external_function(name_pair.first, args, path.value());
+    return call_external_function(cmd, args, path.value());
   }
-  return notfound(name_pair.first);
+  return notfound(cmd);
 }
 
 int Shell::run() {
