@@ -51,21 +51,35 @@ int Shell::run() {
 }
 
 ArgList parse_args(const std::string &str) {
-  bool is_quoting = false;
+  enum State { N /*Normal*/, S /*Single*/, D /*Double*/ } state = State::N;
   std::string arg;
   std::vector<std::string> args;
   arg.reserve(16);
   for (char c : str) {
     if (c == '\'') {
-      is_quoting = !is_quoting;
+      if (state == State::S) {
+        state = State::N;
+      } else if (state == State::N) {
+        state = State::S;
+      } else {
+        arg.push_back('\'');
+      }
+    } else if (c == '"') {
+      if (state == State::D) {
+        state = State::N;
+      } else if (state == State::N) {
+        state = State::D;
+      } else {
+        arg.push_back('"');
+      }
     } else if (c == ' ') {
-      if (is_quoting) {
+      if (state != State::N) {
         arg.push_back(' ');
       } else if (!arg.empty()) {
         args.push_back(arg);
         arg.clear();
       }
-      // Otherwise, it's consecutive space...ignoring
+      // Otherwise, it's consecutive space outside of quotes...ignoring
     } else {
       arg.push_back(c);
     }
