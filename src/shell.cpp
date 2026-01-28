@@ -51,8 +51,13 @@ int Shell::run() {
 }
 
 ArgList parse_args(const std::string &str) {
-  enum class ArgState : char { Normal, SingleQuote = '\'', DoubleQuote = '"' };
+  enum class ArgState : char {
+    Normal,
+    SingleQuote = '\'',
+    DoubleQuote = '"',
+  };
   ArgState state = ArgState::Normal;
+  bool is_escaping = false;
   std::string arg;
   std::vector<std::string> args;
   arg.reserve(16);
@@ -82,7 +87,22 @@ ArgList parse_args(const std::string &str) {
     return true;
   };
 
+  auto handle_backslash = [&is_escaping, &arg](char c) {
+    if (is_escaping) {
+      arg.push_back(c);
+      is_escaping = false;
+      return true;
+    }
+    if (c == '\\') {
+      is_escaping = true;
+      return true;
+    }
+    return false;
+  };
+
   for (char c : str) {
+    if (handle_backslash(c))
+      continue;
     if (handle_quote(c, ArgState::SingleQuote))
       continue;
     if (handle_quote(c, ArgState::DoubleQuote))
