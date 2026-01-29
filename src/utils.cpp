@@ -5,20 +5,8 @@
 #include <vector>
 
 namespace shell {
-std::vector<std::string_view> tokenize_sv(const std::string_view str_sv,
-                                          char delimiter) {
-  std::vector<std::string_view> res;
-  size_t delimiter_pos = 0, delimiter_prev = 0;
-  while (delimiter_pos != std::string::npos) {
-    delimiter_pos = str_sv.find(delimiter, delimiter_prev);
-    res.emplace_back(
-        str_sv.substr(delimiter_prev, delimiter_pos - delimiter_prev));
-    delimiter_prev = delimiter_pos + 1;
-  }
-  return res;
-}
 
-std::vector<std::string> tokenize(const std::string &str, char delimiter) {
+std::vector<std::string> split(const std::string &str, char delimiter) {
   std::vector<std::string> res;
   size_t delimiter_pos = 0, delimiter_prev = 0;
   while (delimiter_pos != std::string::npos) {
@@ -28,24 +16,6 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter) {
     delimiter_prev = delimiter_pos + 1;
   }
   return res;
-}
-
-std::pair<std::string_view, std::optional<std::string_view>>
-tokenize_fist_sv(const std::string_view str_sv, char delimiter) {
-  size_t delimiter_pos = str_sv.find(delimiter);
-  return {str_sv.substr(0, delimiter_pos),
-          delimiter_pos == std::string_view::npos
-              ? std::nullopt
-              : std::optional(str_sv.substr(delimiter_pos + 1))};
-}
-
-std::pair<std::string, std::optional<std::string>>
-tokenize_fist(const std::string &str, char delimiter) {
-  size_t delimiter_pos = str.find(delimiter);
-  return {str.substr(0, delimiter_pos),
-          delimiter_pos == std::string::npos
-              ? std::nullopt
-              : std::optional(str.substr(delimiter_pos + 1))};
 }
 
 std::optional<std::string> search_path(const std::string_view name,
@@ -66,7 +36,7 @@ std::optional<std::string> search_path(const std::string_view name,
   return std::nullopt;
 }
 
-std::ostream &operator<<(std::ostream &os, const ArgList &args) {
+std::ostream &operator<<(std::ostream &os, const WordList &args) {
   if (args.empty()) {
     return os;
   }

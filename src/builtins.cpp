@@ -18,17 +18,17 @@ namespace {
 // TODO: I really need to change this registry part... Not sure if this can be
 // acheived by some meta programming techniques. Or we could just register them
 // at runtime and lazily...
-int echo_handler(const std::string_view /* unused */, const ArgList &args,
+int echo_handler(const std::string_view /* unused */, const WordList &args,
                  const ShellContext & /* unused */);
-int type_handler(const std::string_view /* unused */, const ArgList &args,
+int type_handler(const std::string_view /* unused */, const WordList &args,
                  const ShellContext &ctx);
 int exit_handler(const std::string_view /* unused */,
-                 const ArgList & /* unused */,
+                 const WordList & /* unused */,
                  const ShellContext & /* unused */);
 int pwd_handler(const std::string_view /* unused */,
-                const ArgList & /* unused */,
+                const WordList & /* unused */,
                 const ShellContext & /* unused */);
-int cd_handler(const std::string_view /* unused */, const ArgList &args,
+int cd_handler(const std::string_view /* unused */, const WordList &args,
                const ShellContext & /* unused */);
 
 constexpr auto handler_map =
@@ -40,13 +40,13 @@ constexpr auto handler_map =
          {"cd", cd_handler}}};
 
 // Built-in Functions
-int echo_handler(const std::string_view name_sv, const ArgList &args,
+int echo_handler(const std::string_view name_sv, const WordList &args,
                  const ShellContext & /* unused */) {
   std::cout << args << std::endl;
   return 0;
 }
 
-int type_handler(const std::string_view /* unused */, const ArgList &args,
+int type_handler(const std::string_view /* unused */, const WordList &args,
                  const ShellContext &ctx) {
   for (const std::string& arg : args) {
     if (get_builtin(arg)) {
@@ -64,19 +64,19 @@ int type_handler(const std::string_view /* unused */, const ArgList &args,
 }
 
 int exit_handler(const std::string_view /* unused */,
-                 const ArgList & /* unused */,
+                 const WordList & /* unused */,
                  const ShellContext & /* unused */) {
   return 9;
 }
 
 int pwd_handler(const std::string_view /* unused */,
-                const ArgList & /* unused */,
+                const WordList & /* unused */,
                 const ShellContext & /* unused */) {
   std::cout << std::filesystem::current_path().string() << std::endl;
   return 0;
 }
 
-int cd_handler(const std::string_view /* unused */, const ArgList &args,
+int cd_handler(const std::string_view /* unused */, const WordList &args,
                const ShellContext & /* unused */) {
   if (args.size() > 1) {
     std::cerr << "Too many args for cd command\n";
@@ -103,7 +103,7 @@ function_handle_t get_builtin(std::string_view name) {
 }
 
 int call_external_function(const std::string_view name_sv,
-                           const ArgList &args, const std::string &path) {
+                           const WordList &args, const std::string &path) {
   pid_t pid = fork();
   if (pid < 0) {
     std::cerr << "Fork Error.\n";

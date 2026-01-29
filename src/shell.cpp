@@ -21,7 +21,7 @@ int Shell::eval(const std::string &commands) {
   // It should not be empty string.
   assert(!commands.empty());
 
-  ArgList args;
+  WordList args;
   args = parse_args(commands);
   std::string cmd = std::move(args.front());
   args.erase(args.begin());
@@ -55,7 +55,7 @@ int Shell::run() {
   return 0;
 }
 
-ArgList parse_args(const std::string &str) {
+WordList parse_args(const std::string &str) {
   enum class ArgState : char {
     Normal,
     SingleQuote = '\'',

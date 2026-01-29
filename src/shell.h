@@ -17,6 +17,6 @@ public:
   int run();
 };
 
-ArgList parse_args(const std::string& str);
+WordList parse_args(const std::string& str);
 } // namespace shell
 // SHELL_H
