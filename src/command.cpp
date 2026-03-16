@@ -175,11 +175,12 @@ void Lexer::consume_normal_() {
         text = text + consume_single_quote_();
       } else if (c == '"') {
         text = text + consume_double_quote_();
-      } else if (c == '<') {
+      } else if (c == '>') {
         // TODO: Do we need to put this int to functions?
         if (text.length() == 1 && text[0] == '2') {
           emplace_type(WordType::Stderr);
         } else {
+          emplace_word();
           emplace_type(WordType::Stdin);
         }
       }
@@ -207,8 +208,18 @@ AbstractCommand parse(std::string_view command) {
     if (wt == WordType::Text) {
       res.arguments.emplace_back(lexer.word().value());
     } else if (wt == WordType::Stdin || wt == WordType::Stderr) {
-      // Set up redirectory
-      // Now do nothing
+      if (lexer.next() != WordType::Text) {
+        throw std::runtime_error("[Parser] Redirector expect filename");
+      }
+      Redirector rd;
+      rd.type = RedirectorType::Write;
+      if (wt == WordType::Stdin) {
+        rd.target_fd = 1;
+      } else {
+        rd.target_fd = 2;
+      }
+      rd.filename = lexer.word().value();
+      res.redirectors.emplace_back(std::move(rd));
     }
   }
   return res;
