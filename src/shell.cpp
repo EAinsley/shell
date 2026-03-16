@@ -1,13 +1,16 @@
 #include "shell.h"
 
 #include "builtins.h"
+#include "command.h"
+#include "shell_context.h"
 #include "utils.h"
 #include <cassert>
 #include <cstdlib>
+#include <fcntl.h>
 #include <iostream>
-#include <utility>
-
-#include "command.h"
+#include <sys/stat.h>
+// #include <sys/types.h>
+#include <unistd.h>
 
 namespace shell {
 
@@ -22,21 +25,22 @@ int Shell::eval(const std::string &commands) {
   // It should not be empty string.
   assert(!commands.empty());
 
-  WordList args;
-  args = parse_args(commands);
-  std::string cmd = std::move(args.front());
-  args.erase(args.begin());
+  AbstractCommand ac = parser::parse(commands);
 
-  function_handle_t func_handler = get_builtin(cmd);
+  function_handle_t func_handler = get_builtin(ac.command);
   // TODO: Shall we unified this part?
-  if (func_handler != nullptr) {
-    return func_handler(cmd, args, ctx_);
+  {
+    FDSaver fdsaver;
+    apply_redirectorys_(ac.redirectors);
+    if (func_handler != nullptr) {
+      return func_handler(ac.command, ac.arguments, ctx_);
+    }
+    std::optional<std::string> path = search_path(ac.command, ctx_.path_);
+    if (path.has_value()) {
+      return call_external_function(ac.command, ac.arguments, path.value());
+    }
+    return notfound(ac.command);
   }
-  std::optional<std::string> path = search_path(cmd, ctx_.path_);
-  if (path.has_value()) {
-    return call_external_function(cmd, args, path.value());
-  }
-  return notfound(cmd);
 }
 
 int Shell::run() {
@@ -54,6 +58,16 @@ int Shell::run() {
     }
   }
   return 0;
+}
+
+void Shell::apply_redirectorys_(const std::vector<Redirector> &redirectors) {
+  for (const auto &r : redirectors) {
+    if (r.type == RedirectorType::Write) {
+      int fd = open(r.filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      dup2(fd, r.target_fd);
+      close(fd);
+    }
+  }
 }
 
 WordList parse_args(const std::string &str) {
