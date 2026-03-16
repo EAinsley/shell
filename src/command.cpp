@@ -74,7 +74,7 @@ const std::optional<std::string> Lexer::word() const {
 }
 
 bool Lexer::eof() const { return pos_ + 1 >= parsed_words_.size(); }
-
+/** Inside Single Quote there should be no special behavior */
 std::string Lexer::consume_single_quote_() {
   std::string text;
   text.reserve(16);
@@ -83,15 +83,7 @@ std::string Lexer::consume_single_quote_() {
     while (true) {
       char c = shell_command_stream_.next();
       if (c == '\'') {
-        if (shell_command_stream_.peek() == '\'') {
-          shell_command_stream_.next();
-          continue;
-        }
         return text;
-      }
-      if (c == '\\') {
-        text.push_back(shell_command_stream_.next());
-        continue;
       }
       text.push_back(c);
     }
@@ -123,10 +115,6 @@ std::string Lexer::consume_double_quote_() {
     while (true) {
       char c = shell_command_stream_.next();
       if (c == '\"') {
-        if (shell_command_stream_.peek() == '"') {
-          shell_command_stream_.next();
-          continue;
-        }
         return text;
       }
       if (c == '\\') {
