@@ -180,7 +180,9 @@ void Lexer::consume_normal_() {
         if (text.length() == 1 && text[0] == '2') {
           emplace_type(WordType::Stderr);
         } else {
-          emplace_word();
+          if (!(text.length() == 1 && text[0] == '1')) {
+            emplace_word();
+          }
           emplace_type(WordType::Stdin);
         }
       }
