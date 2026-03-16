@@ -168,7 +168,9 @@ void Lexer::consume_normal_() {
   try {
     while (!shell_command_stream_.eof()) {
       char c = shell_command_stream_.next();
-      if (c == ' ') {
+      if (c == '\\') {
+        text.push_back(shell_command_stream_.next());
+      } else if (c == ' ') {
         emplace_word();
         consume_space();
       } else if (c == '\'') {
