@@ -26,14 +26,22 @@
 
 namespace shell {
 
-class AbstractCommand {
-  std::string command_;
-  WordList arguments_;
-  // We will also add addition evironment, piplelines... here
+enum class RedirectorType { Write, Append };
+
+struct Redirector {
+  int target_fd;
+  RedirectorType type;
+  std::string filename;
+};
+
+struct AbstractCommand {
+  std::string command;
+  WordList arguments;
+  std::vector<Redirector> redirectors;
 };
 
 namespace parser {
-enum class WordType { Text, Stdin, Stdout };
+enum class WordType { Text, Stdin, Stderr, Eof };
 
 struct Word {
   WordType type;
@@ -57,8 +65,9 @@ public:
   ShellCommandStream &operator=(ShellCommandStream &) = delete;
 
   char next();
-  char peek();
-  bool eof();
+  char peek() const;
+  char now() const;
+  bool eof() const;
 };
 
 class Lexer {
@@ -71,21 +80,33 @@ private:
   void consume_normal_();
   // void consume_all_();
 
+  // TODO: Do we need to separate LexerStream and Lexer?
+  int pos_ = -1;
+
 public:
   Lexer() = delete;
   explicit Lexer(std::string_view command); // We will do cosume_ here.
 
   const std::vector<Word> &words() const;
   const WordList words_str() const;
-};
-class Parser {
-private:
-  AbstractCommand parsed_command_;
 
-public:
-  explicit Parser(std::string_view command);
-  const AbstractCommand &abstract_command() const;
+  const WordType next();
+  const WordType peek() const;
+  const WordType now() const;
+  const std::optional<std::string> word() const;
+  bool eof() const;
 };
+// class Parser {
+// private:
+//   AbstractCommand parsed_command_;
+//
+// public:
+//   explicit Parser(std::string_view command);
+//   const AbstractCommand &abstract_command() const;
+// };
+//
+
+AbstractCommand parse(std::string_view command);
 
 } // namespace parser
 } // namespace shell

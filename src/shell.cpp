@@ -22,21 +22,18 @@ int Shell::eval(const std::string &commands) {
   // It should not be empty string.
   assert(!commands.empty());
 
-  WordList args;
-  args = parse_args(commands);
-  std::string cmd = std::move(args.front());
-  args.erase(args.begin());
+  AbstractCommand ac = parser::parse(commands);
 
-  function_handle_t func_handler = get_builtin(cmd);
+  function_handle_t func_handler = get_builtin(ac.command);
   // TODO: Shall we unified this part?
   if (func_handler != nullptr) {
-    return func_handler(cmd, args, ctx_);
+    return func_handler(ac.command, ac.arguments, ctx_);
   }
-  std::optional<std::string> path = search_path(cmd, ctx_.path_);
+  std::optional<std::string> path = search_path(ac.command, ctx_.path_);
   if (path.has_value()) {
-    return call_external_function(cmd, args, path.value());
+    return call_external_function(ac.command, ac.arguments, path.value());
   }
-  return notfound(cmd);
+  return notfound(ac.command);
 }
 
 int Shell::run() {
