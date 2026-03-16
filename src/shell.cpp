@@ -2,11 +2,12 @@
 
 #include "builtins.h"
 #include "utils.h"
-#include <array>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <utility>
+
+#include "command.h"
 
 namespace shell {
 
@@ -21,7 +22,7 @@ int Shell::eval(const std::string &commands) {
   // It should not be empty string.
   assert(!commands.empty());
 
-  ArgList args;
+  WordList args;
   args = parse_args(commands);
   std::string cmd = std::move(args.front());
   args.erase(args.begin());
@@ -55,85 +56,9 @@ int Shell::run() {
   return 0;
 }
 
-ArgList parse_args(const std::string &str) {
-  enum class ArgState : char {
-    Normal,
-    SingleQuote = '\'',
-    DoubleQuote = '"',
-  };
-  ArgState state = ArgState::Normal;
-  bool is_escaping = false;
-  std::string arg;
-  std::vector<std::string> args;
-  arg.reserve(16);
-
-  auto handle_quote = [&state, &arg](char q, ArgState s) {
-    if (q != static_cast<char>(s)) {
-      return false;
-    }
-    if (state == s) {
-      state = ArgState::Normal;
-    } else if (state == ArgState::Normal) {
-      state = s;
-    } else {
-      arg.push_back(q);
-    }
-    return true;
-  };
-
-  auto handle_space = [&state, &arg, &args](char c) {
-    if (state != ArgState::Normal || c != ' ') {
-      return false;
-    }
-    if (!arg.empty()) {
-      args.push_back(arg);
-      arg.clear();
-    }
-    return true;
-  };
-
-  auto handle_backslash = [&is_escaping, &arg, &state](char c) {
-    const std::array<char, 4> double_escape = {'"', '\\', '$', '`'};
-    bool can_escape = true;
-    if (is_escaping && state == ArgState::DoubleQuote) {
-      can_escape = false;
-      for (auto e : double_escape) {
-        if (e == c) {
-          can_escape = true;
-        }
-      }
-    }
-    if (is_escaping) {
-      if (!can_escape) {
-        arg.push_back('\\');
-      }
-      arg.push_back(c);
-      is_escaping = false;
-      return true;
-    }
-    if (c == '\\' && state != ArgState::SingleQuote) {
-      is_escaping = true;
-      return true;
-    }
-    return false;
-  };
-
-  for (char c : str) {
-    if (handle_backslash(c))
-      continue;
-    if (handle_quote(c, ArgState::SingleQuote))
-      continue;
-    if (handle_quote(c, ArgState::DoubleQuote))
-      continue;
-    if (handle_space(c))
-      continue;
-    arg.push_back(c);
-  }
-
-  if (!arg.empty()) {
-    args.push_back(arg);
-  }
-  return args;
+WordList parse_args(const std::string &str) {
+  parser::Lexer lex(str);
+  return lex.words_str();
 }
 
 } // namespace shell
